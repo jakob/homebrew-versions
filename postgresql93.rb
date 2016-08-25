@@ -14,6 +14,7 @@ class Postgresql93 < Formula
   option "without-perl", "Build without Perl support"
   option "without-tcl", "Build without Tcl support"
   option "with-dtrace", "Build with DTrace support"
+  option "with-nls", "Build with localized error messages"
 
   deprecated_option "no-perl" => "without-perl"
   deprecated_option "no-tcl" => "without-tcl"
@@ -24,6 +25,7 @@ class Postgresql93 < Formula
   depends_on "libxml2" if MacOS.version <= :leopard # Leopard libxml is too old
   depends_on "ossp-uuid" => :recommended # ossp-uuid is no longer required for uuid support since 9.4beta2
   depends_on :python => :optional
+  depends_on "gettext" if build.with? "nls"
 
   conflicts_with "postgres-xc",
     :because => "postgresql and postgres-xc install the same binaries."
@@ -42,6 +44,11 @@ class Postgresql93 < Formula
     ENV.prepend "LDFLAGS", "-L#{Formula["openssl"].opt_lib} -L#{Formula["readline"].opt_lib}"
     ENV.prepend "CPPFLAGS", "-I#{Formula["openssl"].opt_include} -I#{Formula["readline"].opt_include}"
 
+    if build.with? "nls"
+      ENV.prepend "LDFLAGS", "-L#{Formula["gettext"].opt_lib}"
+      ENV.prepend "CPPFLAGS", "-I#{Formula["gettext"].opt_include}"
+    end
+
     args = %W[
       --disable-debug
       --prefix=#{prefix}
@@ -59,6 +66,7 @@ class Postgresql93 < Formula
 
     args << "--with-python" if build.with? "python"
     args << "--with-perl" if build.with? "perl"
+    args << "--enable-nls" if build.with? "nls"
 
     # The CLT is required to build tcl support on 10.7 and 10.8 because tclConfig.sh is not part of the SDK
     if build.with?("tcl") && (MacOS.version >= :mavericks || MacOS::CLT.installed?)
